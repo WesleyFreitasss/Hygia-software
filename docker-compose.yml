@@ -1,0 +1,32 @@
+version: '5.1.1'
+
+services:
+  back-end:
+    build: .
+    user: node
+    image: node:24.18.0
+    container_name: back_end_image
+    restart: always
+    volumes: 
+      - ./:/app
+    depends_on: 
+      - db
+    ports: 
+      - 3001:3001
+    environment:
+        DB_USER: root
+        DB_PASSWORD: password
+        DB_HOST: db
+        DB_PORT: 3306
+        DB_NAME: 
+        JWT_SECRET: segredo
+
+
+  db:
+    container_name: hygia_db
+    image: mysql:8.0.32
+    restart: always
+    ports: 
+      - 3306:3306
+    environment:
+        MYSQL_ROOT_PASSWORD: password
