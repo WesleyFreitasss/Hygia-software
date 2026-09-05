@@ -1,11 +1,39 @@
 import { HttpError } from './httpError';
 import { isNivelAcesso, type CreateUserInput, type NivelAcesso } from '../types/user';
 
-/** Regex pragmatica de e-mail: barra o obviamente invalido sem rejeitar casos legitimos. */
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+/*
+ * Validacao de e-mail.
+ *
+ * A regex cobre a forma `local@dominio.tld` seguindo o que o RFC 5322 permite
+ * na pratica. Ela barra casos que a versao anterior (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/)
+ * deixava passar:
+ *   - ponto no inicio, no fim ou duplicado na parte local (.ana@x.com, a..b@x.com)
+ *   - hifen no inicio ou no fim de um rotulo do dominio   (ana@-x.com, ana@x-.com)
+ *   - dominio sem TLD                                     (ana@localhost)
+ *   - TLD numerico ou de uma letra so                     (ana@x.123, ana@x.c)
+ *
+ * Os limites de tamanho vem do RFC 5321 e ficam fora da regex, porque contagem
+ * de caracteres nao se expressa bem nesse formato.
+ */
+const EMAIL_REGEX =
+  /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,24}$/;
+
+/** Limites do RFC 5321: 254 no endereco inteiro, 64 na parte antes do @. */
+const EMAIL_MAX = 254;
+const EMAIL_LOCAL_MAX = 64;
 
 export const SENHA_MIN = 8;
 export const SENHA_MAX = 72; // limite do bcrypt: bytes alem de 72 sao ignorados
+
+/** Aplica regex e limites de tamanho. Recebe o e-mail ja aparado. */
+export function emailValido(email: string): boolean {
+  if (email.length > EMAIL_MAX) return false;
+
+  const arroba = email.lastIndexOf('@');
+  if (arroba < 0 || arroba > EMAIL_LOCAL_MAX) return false;
+
+  return EMAIL_REGEX.test(email);
+}
 
 /** Erros de validacao acumulados por campo. */
 type Erros = Record<string, string>;
@@ -35,7 +63,7 @@ export function normalizarEmail(email: string): string {
 function validarEmail(valor: unknown, erros: Erros): string {
   const email = texto(valor);
   if (!email) erros.email = 'E-mail e obrigatorio.';
-  else if (!EMAIL_REGEX.test(email)) erros.email = 'E-mail invalido.';
+  else if (!emailValido(email)) erros.email = 'Informe um e-mail valido (ex.: nome@empresa.com.br).';
   return normalizarEmail(email);
 }
 
@@ -81,8 +109,12 @@ export function validarLogin(body: unknown): LoginInput {
   const dados = corpoObjeto(body);
   const erros: Erros = {};
 
+  // O formato do e-mail e cobrado tambem no login: barra lixo antes de tocar
+  // no banco e no bcrypt.
   const email = validarEmail(dados.email, erros);
-  // No login nao aplicamos regra de forca: senha antiga curta ainda deve conseguir entrar.
+
+  // Ja a regra de forca da senha nao se aplica aqui: uma senha antiga e curta
+  // ainda precisa conseguir entrar.
   const senha = typeof dados.senha === 'string' ? dados.senha : '';
   if (!senha) erros.senha = 'Senha e obrigatoria.';
 

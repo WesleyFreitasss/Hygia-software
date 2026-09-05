@@ -3,13 +3,18 @@ import jwt from 'jsonwebtoken';
 
 import { env } from '../config/env';
 import { HttpError } from '../utils/httpError';
+import { authService } from '../services/authService';
 import { isNivelAcesso, type NivelAcesso, type TokenPayload } from '../types/user';
 
 /**
- * Le o header `Authorization: Bearer <token>`, valida a assinatura e
- * preenche `req.usuario`. Use em qualquer rota do CRM que exija sessao.
+ * Le o header `Authorization: Bearer <token>`, valida a assinatura e confirma
+ * no banco que a sessao continua valendo (ver `validarSessao`). Preenche
+ * `req.usuario` com o payload e `req.usuarioAutenticado` com o registro atual.
+ *
+ * O custo e uma leitura por requisicao autenticada - o preco de poder revogar
+ * um JWT antes de ele expirar.
  */
-export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
+export async function authMiddleware(req: Request, _res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization;
 
   if (!header?.startsWith('Bearer ')) {
@@ -18,25 +23,39 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
 
   const token = header.slice('Bearer '.length).trim();
 
+  let payload: TokenPayload;
   try {
-    const payload = jwt.verify(token, env.jwtSecret, { algorithms: ['HS256'] });
+    const bruto = jwt.verify(token, env.jwtSecret, { algorithms: ['HS256'] });
 
-    if (typeof payload === 'string' || !payload.sub || !isNivelAcesso(payload.nivelAcesso)) {
+    if (
+      typeof bruto === 'string' ||
+      !bruto.sub ||
+      !isNivelAcesso(bruto.nivelAcesso) ||
+      typeof bruto.tokenVersion !== 'number'
+    ) {
       return next(HttpError.unauthorized('Token com formato invalido.'));
     }
 
-    req.usuario = {
-      sub: payload.sub,
-      email: String(payload.email ?? ''),
-      nivelAcesso: payload.nivelAcesso,
-    } satisfies TokenPayload;
-
-    next();
+    payload = {
+      sub: bruto.sub,
+      email: String(bruto.email ?? ''),
+      nivelAcesso: bruto.nivelAcesso,
+      tokenVersion: bruto.tokenVersion,
+    };
   } catch (erro) {
     if (erro instanceof jwt.TokenExpiredError) {
       return next(HttpError.unauthorized('Sessao expirada. Faca login novamente.'));
     }
-    next(HttpError.unauthorized('Token invalido.'));
+    return next(HttpError.unauthorized('Token invalido.'));
+  }
+
+  try {
+    // Confere no banco se o token ainda corresponde a versao vigente.
+    req.usuarioAutenticado = await authService.validarSessao(payload);
+    req.usuario = payload;
+    next();
+  } catch (erro) {
+    next(erro);
   }
 }
 

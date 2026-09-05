@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { HttpError } from '../utils/httpError';
 import { NIVEL_ACESSO_PADRAO, userRepository, type UserRepository } from '../repositories/userRepository';
+import { emailService } from './emailService';
 import { toPublicUser, type CreateUserInput, type PublicUser, type TokenPayload, type User } from '../types/user';
 import type { LoginInput, ResetPasswordInput } from '../utils/validators';
 
@@ -17,11 +18,10 @@ export interface AuthResult {
 
 export interface ForgotPasswordResult {
   /**
-   * Token puro. Existe apenas para desenvolvimento/testes enquanto o envio de
-   * e-mail nao esta plugado. Em producao ele NAO e devolvido na resposta.
+   * Link do Ethereal para abrir o e-mail no navegador. So aparece fora de
+   * producao: e uma comodidade de desenvolvimento, nao parte do contrato.
    */
-  resetToken?: string;
-  expiraEm?: Date;
+  previewUrl?: string;
 }
 
 /**
@@ -48,6 +48,7 @@ export class AuthService {
       email: input.email,
       senhaHash,
       nivelAcesso: input.nivelAcesso ?? NIVEL_ACESSO_PADRAO,
+      tokenVersion: 0,
       resetTokenHash: null,
       resetTokenExpiraEm: null,
     });
@@ -73,9 +74,10 @@ export class AuthService {
   /**
    * POST /auth/forgot-password
    *
-   * Gera um token de uso unico com validade curta. Guardamos apenas o SHA-256
-   * do token: se o banco vazar, os tokens em transito continuam inuteis.
-   * A resposta e sempre a mesma, exista ou nao a conta (evita enumeracao).
+   * Gera um token de uso unico com validade curta e manda o link por e-mail.
+   * Guardamos apenas o SHA-256 do token: se o banco vazar, os tokens em
+   * transito continuam inuteis. A resposta e sempre a mesma, exista ou nao a
+   * conta (evita enumeracao de e-mails cadastrados).
    */
   async forgotPassword(email: string): Promise<ForgotPasswordResult> {
     const usuario = await this.repo.findByEmail(email);
@@ -89,12 +91,18 @@ export class AuthService {
       resetTokenExpiraEm: expiraEm,
     });
 
-    // TODO(integracao): enviar o link de redefinicao por e-mail
-    // (ex.: `${APP_URL}/redefinir-senha?token=${resetToken}`) e parar de
-    // devolver o token na resposta em qualquer ambiente.
-    if (env.isProducao) return {};
+    try {
+      const envio = await emailService.enviarRecuperacaoSenha(usuario.email, usuario.nome, resetToken);
+      // Fora de producao devolvemos a previa para facilitar o teste manual.
+      // O token puro nunca volta na resposta, em nenhum ambiente.
+      if (!env.isProducao && envio.previewUrl) return { previewUrl: envio.previewUrl };
+    } catch (erro) {
+      // O e-mail falhou, mas a resposta continua generica: contar que houve
+      // erro no envio ja denunciaria que a conta existe.
+      console.error('[auth] falha ao enviar o e-mail de recuperacao:', erro);
+    }
 
-    return { resetToken, expiraEm };
+    return {};
   }
 
   /**
@@ -123,12 +131,26 @@ export class AuthService {
       resetTokenHash: null,
       resetTokenExpiraEm: null,
     });
+
+    // Troca de senha encerra todas as sessoes: quem tinha um JWT antigo -
+    // inclusive o invasor que motivou a troca - perde o acesso na hora.
+    await this.repo.incrementarTokenVersion(usuario.id);
   }
 
-  /** Usado pelo middleware de autenticacao para carregar o usuario do token. */
-  async buscarPorId(id: string): Promise<PublicUser | null> {
-    const usuario = await this.repo.findById(id);
-    return usuario ? toPublicUser(usuario) : null;
+  /**
+   * Valida uma sessao ja autenticada pelo JWT.
+   * Alem de conferir se o usuario ainda existe, compara a versao do token com
+   * a do banco - e isso que faz a revogacao valer.
+   */
+  async validarSessao(payload: TokenPayload): Promise<PublicUser> {
+    const usuario = await this.repo.findById(payload.sub);
+    if (!usuario) throw HttpError.unauthorized('Sessao invalida.');
+
+    if (usuario.tokenVersion !== payload.tokenVersion) {
+      throw HttpError.unauthorized('Sessao encerrada porque a senha foi alterada. Faca login novamente.');
+    }
+
+    return toPublicUser(usuario);
   }
 
   private montarSessao(usuario: User): AuthResult {
@@ -136,6 +158,7 @@ export class AuthService {
       sub: usuario.id,
       email: usuario.email,
       nivelAcesso: usuario.nivelAcesso,
+      tokenVersion: usuario.tokenVersion,
     };
 
     const token = jwt.sign(payload, env.jwtSecret, {

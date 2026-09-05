@@ -1,0 +1,308 @@
+/* ==========================================================================
+   Tela de login do Hygia Software.
+   Fundo azul-marinho quase preto com acabamento dourado.
+   CSS puro: o projeto nao tem Tailwind configurado.
+   ========================================================================== */
+
+:root {
+  --ouro-claro: #f7e7b4;
+  --ouro: #d4af37;
+  --ouro-escuro: #8a6a1f;
+  --marinho: #060911;
+  --marinho-alto: #101828;
+  --texto: #f1e7d0;
+  --erro: #ff8a80;
+  --raio: 10px;
+  --transicao: 180ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--marinho);
+  color: var(--texto);
+  font-family: "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------- estrutura */
+
+.login-tela {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  /*
+   * Foco de luz radial discreto atras da logo: apenas o suficiente para dar
+   * profundidade, sem o brilho forte da versao anterior.
+   */
+  background:
+    radial-gradient(ellipse 62% 46% at 50% 32%, rgba(24, 36, 64, 0.55) 0%, transparent 72%),
+    var(--marinho);
+}
+
+/* Coluna unica: tudo herda o alinhamento central daqui. */
+.login-cartao {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ titulo */
+
+.login-titulo {
+  margin: 0 0 26px;
+  font-size: clamp(30px, 8vw, 42px);
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  /* Compensa o espaco que o letter-spacing deixa apos a ultima letra. */
+  text-indent: 0.22em;
+  background: linear-gradient(180deg, #fff6da 0%, var(--ouro-claro) 35%, var(--ouro) 75%, var(--ouro-escuro) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* -------------------------------------------------------------------- logo */
+
+/*
+ * O arquivo em public/logo-hygia.png e retangular e vem com um fundo escuro
+ * proprio (a arte nao tem recorte transparente). Dois recursos resolvem isso
+ * sem precisar editar a imagem:
+ *   1. recorte quadrado central (object-fit: cover) descarta as sobras
+ *      laterais - e junto com elas a marca d'agua do canto;
+ *   2. uma mascara radial dissolve a borda da arte no fundo da tela, entao o
+ *      brasao aparece sem nenhum cartao retangular ou disco visivel em volta.
+ * Para trocar a arte, passe a prop `logoSrc` para <Login />.
+ */
+.login-logo {
+  width: clamp(190px, 54vw, 250px);
+  aspect-ratio: 1;
+  margin-bottom: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.login-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Aproxima o brasao da borda do recorte, dando mais presenca a marca. */
+  transform: scale(1.08);
+  /* Opaco no miolo, transparente na borda: a arte funde com o fundo da tela. */
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 48%, rgba(0, 0, 0, 0.45) 62%, transparent 74%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 48%, rgba(0, 0, 0, 0.45) 62%, transparent 74%);
+  /* Escurece a chapa do PNG ate o tom do fundo, preservando o brilho do ouro. */
+  filter: brightness(0.88) saturate(1.05);
+}
+
+/* ------------------------------------------------------------- formulario */
+
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Rotulos existem para leitores de tela; visualmente ficam os placeholders. */
+.login-rotulo-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.login-campo {
+  width: 100%;
+  height: 52px;
+  padding: 0 18px;
+  color: var(--texto);
+  font-size: 16px;
+  /* Fundo levemente escurecido, so para separar o campo do fundo da tela. */
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  border-radius: var(--raio);
+  transition: border-color var(--transicao), box-shadow var(--transicao), background var(--transicao);
+}
+
+.login-campo::placeholder {
+  color: rgba(233, 214, 166, 0.55);
+}
+
+.login-campo:hover:not(:disabled) {
+  border-color: rgba(212, 175, 55, 0.8);
+}
+
+.login-campo:focus {
+  outline: none;
+  border-color: var(--ouro-claro);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.14);
+}
+
+.login-campo:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Campo apontado pelo backend como invalido. */
+.login-campo[aria-invalid="true"] {
+  border-color: rgba(255, 138, 128, 0.75);
+}
+
+.login-esqueci {
+  margin: 2px 0 4px;
+  padding: 4px 6px;
+  color: var(--ouro-claro);
+  font-size: 14px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color var(--transicao);
+}
+
+.login-esqueci:hover,
+.login-esqueci:focus-visible {
+  color: #fff6da;
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ botao */
+
+.login-botao {
+  width: 100%;
+  height: 54px;
+  color: #2b1f05;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  cursor: pointer;
+  border: 1px solid rgba(247, 231, 180, 0.7);
+  border-radius: var(--raio);
+  /*
+   * Textura metalica: as paradas claras no meio simulam o reflexo de uma
+   * superficie de ouro polido, e as escuras nas pontas dao o volume.
+   */
+  background: linear-gradient(
+    100deg,
+    #8a6a1f 0%,
+    #c9a227 16%,
+    #f2dd9f 36%,
+    #fff8e6 50%,
+    #eed58c 64%,
+    #c19a24 84%,
+    #85641c 100%
+  );
+  box-shadow:
+    0 4px 16px rgba(212, 175, 55, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: filter var(--transicao), box-shadow var(--transicao), transform var(--transicao);
+}
+
+.login-botao:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow:
+    0 6px 22px rgba(212, 175, 55, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.login-botao:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.login-botao:disabled {
+  cursor: progress;
+  filter: grayscale(0.35) brightness(0.85);
+}
+
+/* --------------------------------------------------------------- mensagens */
+
+.login-mensagem {
+  width: 100%;
+  margin: 16px 0 0;
+  padding: 11px 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  border-radius: 8px;
+}
+
+.login-mensagem--erro {
+  color: var(--erro);
+  background: rgba(255, 86, 86, 0.08);
+  border: 1px solid rgba(255, 86, 86, 0.32);
+}
+
+.login-mensagem--sucesso {
+  color: var(--ouro-claro);
+  background: rgba(212, 175, 55, 0.09);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+.login-mensagem-detalhes {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ------------------------------------------------------------------ rodape */
+
+.login-rodape {
+  margin-top: 26px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--texto);
+}
+
+.login-rodape-link {
+  display: block;
+  margin: 0 auto;
+  padding: 2px 6px;
+  color: var(--ouro-claro);
+  font-size: 15px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color var(--transicao);
+}
+
+.login-rodape-link:hover,
+.login-rodape-link:focus-visible {
+  color: #fff6da;
+  text-decoration: underline;
+}
+
+/* Foco visivel e consistente para navegacao por teclado. */
+.login-tela :focus-visible {
+  outline: 2px solid var(--ouro-claro);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-tela * {
+    transition: none !important;
+  }
+}

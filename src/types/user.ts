@@ -1,6 +1,6 @@
 /**
  * Tipagem central do usuario do CRM Hygia.
- * Este arquivo e a fonte da verdade: repositorios, services e controllers
+ * Este arquivo e a fonte da verdade: model, repositorio, services e controllers
  * devem importar daqui em vez de redeclarar campos.
  */
 
@@ -21,6 +21,12 @@ export interface User {
   /** Hash bcrypt da senha. Nunca sai da camada de service. */
   senhaHash: string;
   nivelAcesso: NivelAcesso;
+  /**
+   * Versao da sessao. Todo JWT carrega o valor vigente no momento da emissao;
+   * ao trocar a senha o numero e incrementado, o que invalida de uma vez todos
+   * os tokens emitidos antes - mesmo os que ainda nao expiraram.
+   */
+  tokenVersion: number;
   criadoEm: Date;
   atualizadoEm: Date;
   /** Hash SHA-256 do token de recuperacao. Null quando nao ha fluxo ativo. */
@@ -51,6 +57,8 @@ export interface TokenPayload {
   sub: string;
   email: string;
   nivelAcesso: NivelAcesso;
+  /** Confrontado com o valor do banco a cada requisicao autenticada. */
+  tokenVersion: number;
 }
 
 /** Remove qualquer campo sensivel antes de devolver o usuario na resposta. */

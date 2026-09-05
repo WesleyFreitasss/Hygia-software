@@ -57,14 +57,15 @@ export class AuthController {
     res.status(200).json({ mensagem: 'Senha redefinida com sucesso. Faca login novamente.' });
   };
 
-  /** GET /auth/me - confere se o token ainda vale e devolve o usuario logado. */
+  /**
+   * GET /auth/me - confere se o token ainda vale e devolve o usuario logado.
+   * O authMiddleware ja carregou o registro do banco ao validar a sessao,
+   * entao aqui nao ha nova consulta.
+   */
   me = async (req: Request, res: Response): Promise<void> => {
-    if (!req.usuario) throw HttpError.unauthorized();
+    if (!req.usuarioAutenticado) throw HttpError.unauthorized();
 
-    const usuario = await this.service.buscarPorId(req.usuario.sub);
-    if (!usuario) throw HttpError.unauthorized('Sessao invalida.');
-
-    res.status(200).json({ usuario });
+    res.status(200).json({ usuario: req.usuarioAutenticado });
   };
 }
 
