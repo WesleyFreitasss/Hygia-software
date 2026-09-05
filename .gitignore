@@ -1,1 +1,9 @@
 node_modules/
+dist/
+dist-web/
+.env
+.env.local
+
+# banco local do SQLite
+*.sqlite
+*.sqlite-journal

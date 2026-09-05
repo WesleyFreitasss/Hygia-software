@@ -13,16 +13,41 @@
   "license": "ISC",
   "author": "",
   "type": "commonjs",
-  "main": "index.js",
-  "scripts": {},
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:web": "vite",
+    "build": "tsc -p tsconfig.json",
+    "build:web": "vite build",
+    "preview:web": "vite preview",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "chai": "^6.2.2",
-    "express": "^5.2.1",
     "sinon": "^22.0.0",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.3",
     "vite": "^8.1.3",
     "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "sequelize": "^6.37.8",
+    "sqlite3": "^6.0.1"
   }
 }
