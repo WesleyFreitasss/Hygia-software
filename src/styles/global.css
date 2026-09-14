@@ -1,0 +1,82 @@
+/* ==========================================================================
+   Folha de estilo global do Hygia Software.
+   Carregada em src/main.jsx antes de qualquer componente.
+   ========================================================================== */
+
+@import "tailwindcss";
+
+/*
+ * Design tokens da marca.
+ *
+ * O bloco `@theme` e a forma do Tailwind v4 de estender o tema - ele substitui
+ * o antigo `tailwind.config.js`. Cada variavel aqui vira classe utilitaria
+ * automaticamente:
+ *
+ *   --color-gold        ->  bg-gold   text-gold   border-gold   ring-gold
+ *   --color-ink         ->  bg-ink    text-ink    ...
+ *   --font-sans         ->  fonte padrao de toda a aplicacao
+ *
+ * A paleta fica definida em UM lugar so. Quando a corretora pedir para ajustar
+ * o tom do dourado, muda-se aqui e a mudanca vale para o CRM inteiro.
+ */
+@theme {
+  /* ---------------------------------------------------------- tipografia */
+  /*
+   * Sobrescrever --font-sans troca a fonte padrao do projeto inteiro, e e
+   * tambem o que a classe `font-sans` do Tailwind passa a aplicar.
+   * O pacote @fontsource/montserrat registra a familia como "Montserrat".
+   * Os demais nomes sao a pilha reserva, usada enquanto a fonte carrega.
+   */
+  --font-sans: "Montserrat", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* ------------------------------------------------------------ dourados */
+  /* Do mais claro ao mais escuro - a ordem importa para montar gradientes. */
+  --color-gold-light: #f3e5ab;  /* brilho / reflexo metalico */
+  --color-gold: #d4af37;        /* dourado cheio, do botao e da logo */
+  --color-gold-muted: #c5a059;  /* dourado opaco, para textos e bordas */
+  --color-gold-dark: #aa7c11;   /* sombra do metal */
+
+  /* -------------------------------------------------------------- fundos */
+  /*
+   * Cinzas neutros e quentes, sem nenhum tom de azul.
+   * Os demais niveis de escuro saem da escala `neutral` que o Tailwind ja
+   * traz pronta (bg-neutral-900, bg-neutral-950...).
+   */
+  --color-ink: #161618;         /* fundo da aplicacao */
+  --color-ink-soft: #1f1f22;    /* halo suave atras da logo */
+  --color-ink-deep: #0a0a0b;    /* fundo dos campos de formulario */
+
+  /* -------------------------------------------------------------- textos */
+  --color-cream: #e8e3d9;       /* texto principal sobre fundo escuro */
+  --color-cream-soft: #a8a29a;  /* texto secundario, rotulos */
+
+  /* ------------------------------------------------------------- estados */
+  --color-danger: #ff8a80;
+}
+
+/*
+ * Regras base do projeto.
+ * `@layer base` coloca isto na camada correta do Tailwind: fica acima do
+ * preflight (o reset do proprio Tailwind) e abaixo das classes utilitarias,
+ * entao qualquer `bg-*` aplicada num componente ainda vence daqui.
+ */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    /*
+     * Avisa o navegador que a interface e escura. Sem isso, os controles
+     * nativos (checkbox, barra de rolagem, seletor de data) sao desenhados no
+     * tema claro e aparecem como blocos brancos sobre o fundo escuro.
+     */
+    color-scheme: dark;
+    background-color: var(--color-ink);
+    color: var(--color-cream);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}

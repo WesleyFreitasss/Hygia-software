@@ -57,13 +57,17 @@ comodo em desenvolvimento. Em producao o caminho correto sao migrations
 | Metodo | Rota                    | Corpo                                    | Resposta                      |
 | ------ | ----------------------- | ---------------------------------------- | ----------------------------- |
 | POST   | `/auth/register`        | `nome`, `email`, `senha`, `nivelAcesso?` | `201` usuario + token JWT     |
-| POST   | `/auth/login`           | `email`, `senha`                         | `200` usuario + token JWT     |
+| POST   | `/auth/login`           | `email`, `senha`, `lembrarMe?`           | `200` usuario + token JWT     |
 | POST   | `/auth/forgot-password` | `email`                                  | `200` mensagem generica       |
 | POST   | `/auth/reset-password`  | `token`, `novaSenha`                     | `200` mensagem de confirmacao |
 | GET    | `/auth/me`              | header `Authorization: Bearer <jwt>`     | `200` usuario da sessao       |
 | GET    | `/health`               | -                                        | `200` status do servico       |
 
 Erros seguem o formato `{ "erro": "mensagem", "detalhes": { "campo": "motivo" } }`.
+
+`lembrarMe: true` no login emite um token de 30 dias em vez de 2 horas - e o
+checkbox "Manter-me conectado" da tela. Motivo e limites em
+[docs/decisoes/0004](docs/decisoes/0004-manter-me-conectado.md).
 
 ### Rate limit
 
@@ -116,16 +120,21 @@ que a mensagem saiu.
 
 ## Front-end
 
-Tela de login em React + Vite, com CSS puro (o projeto nao tem Tailwind configurado).
+Tela de login em React + Vite, estilizada com **Tailwind CSS v4**. Nao ha mais
+nenhum arquivo de CSS por tela: a identidade visual vive nos tokens do tema.
 
 ```
-index.html            # entrada do Vite
-vite.config.mjs       # build do front sai em dist-web/
-public/logo-hygia.png # brasao servido em /logo-hygia.png
-src/main.jsx          # monta o <Login />
-src/login.jsx         # tela de login
-src/login.css         # estilo escuro + dourado
+index.html               # entrada do Vite
+vite.config.mjs          # plugin do Tailwind + build do front em dist-web/
+public/logo-hygia.png    # brasao (512x512, com transparencia)
+scripts/gerar-logo.js    # regera o brasao a partir do arquivo original
+src/main.jsx             # importa fonte + CSS global e monta o <Login />
+src/styles/global.css    # Tailwind, paleta da marca (@theme) e regras base
+src/login.jsx            # tela de login (100% Tailwind)
 ```
+
+A fonte Montserrat e servida pela propria aplicacao (`@fontsource/montserrat`),
+sem depender do Google Fonts. Os icones vem do `lucide-react`.
 
 `npm run dev:web` sobe o front em http://localhost:5173 - rode junto com `npm run dev` (API).
 O endereco da API vem de `VITE_API_URL` e cai em `http://localhost:3000` por padrao.
@@ -145,8 +154,14 @@ O componente aceita as props `logoSrc`, `onSucesso`, `onIrParaCadastro` e
 - Telas de cadastro e de recuperacao de senha ainda nao existem: os links da tela
   de login chamam callbacks vazios ate o roteador entrar.
 - O token fica no localStorage (simples, mas visivel a XSS). Cookie httpOnly e a
-  alternativa mais segura quando o time quiser endurecer isso.
-- `public/logo-hygia.png` tem 1,24 MB (1229x864) e e a maior parte do peso da
-  tela. Vale exportar uma versao menor, ou em WebP, antes de ir para producao.
+  alternativa mais segura quando o time quiser endurecer isso - e ganhou peso
+  agora que "Manter-me conectado" cria sessoes de 30 dias.
+- Nao ha "encerrar sessao em todos os dispositivos" na interface. O backend ja
+  sabe fazer isso (incrementar `tokenVersion`), falta a tela.
+- Os componentes reutilizaveis (Botao, CampoTexto, Alerta) ainda nao foram
+  extraidos: as classes repetidas estao nomeadas no topo de `src/login.jsx`
+  esperando a segunda tela do CRM aparecer para justificar a extracao.
+- ~~`public/logo-hygia.png` tem 1,24 MB~~ **resolvido**: hoje sao 512x512 com
+  transparencia real, 349 KB. Regerar com `node scripts/gerar-logo.js`.
 - Sem testes automatizados: a validacao ate aqui foi manual. O `app.ts` ja e
   separado do `server.ts` justamente para permitir testes com vitest/supertest.

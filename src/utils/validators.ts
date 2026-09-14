@@ -103,6 +103,8 @@ export function validarCadastro(body: unknown): CreateUserInput {
 export interface LoginInput {
   email: string;
   senha: string;
+  /** "Manter-me conectado": estende a validade do token. */
+  lembrarMe: boolean;
 }
 
 export function validarLogin(body: unknown): LoginInput {
@@ -118,8 +120,19 @@ export function validarLogin(body: unknown): LoginInput {
   const senha = typeof dados.senha === 'string' ? dados.senha : '';
   if (!senha) erros.senha = 'Senha e obrigatoria.';
 
+  // Campo opcional. Ausente vale como false; qualquer coisa que nao seja
+  // booleano e erro, para nao aceitar "false" (string) como verdadeiro.
+  let lembrarMe = false;
+  if (dados.lembrarMe !== undefined) {
+    if (typeof dados.lembrarMe !== 'boolean') {
+      erros.lembrarMe = 'Campo "lembrarMe" deve ser true ou false.';
+    } else {
+      lembrarMe = dados.lembrarMe;
+    }
+  }
+
   lancarSeHouverErros(erros);
-  return { email, senha };
+  return { email, senha, lembrarMe };
 }
 
 export function validarForgotPassword(body: unknown): { email: string } {
