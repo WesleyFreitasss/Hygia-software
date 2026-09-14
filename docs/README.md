@@ -35,6 +35,8 @@ para que uma corretora experiente use no dia a dia e devolva feedback real.
   - [0002 — Paleta escura com dourado metalico e Montserrat](decisoes/0002-paleta-premium.md)
   - [0003 — Corrigir o asset da logo em vez de compensar no CSS](decisoes/0003-logo-transparente.md)
   - [0004 — "Manter-me conectado": sessao de 30 dias](decisoes/0004-manter-me-conectado.md)
+- [Registros de segurança](seguranca/) — falhas encontradas, como foram corrigidas e o que se aprendeu
+  - [14/09/2026 — Escalada de privilégio no cadastro público](seguranca/2026-09-14-escalada-de-privilegio-no-cadastro.md)
 
 ### A escrever
 

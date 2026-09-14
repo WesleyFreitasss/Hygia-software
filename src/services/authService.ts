@@ -47,7 +47,9 @@ export class AuthService {
       nome: input.nome,
       email: input.email,
       senhaHash,
-      nivelAcesso: input.nivelAcesso ?? NIVEL_ACESSO_PADRAO,
+      // Fixado no servidor: o cadastro publico sempre cria vendedor.
+      // Segunda barreira, caso a validacao seja contornada no futuro.
+      nivelAcesso: NIVEL_ACESSO_PADRAO,
       tokenVersion: 0,
       resetTokenHash: null,
       resetTokenExpiraEm: null,

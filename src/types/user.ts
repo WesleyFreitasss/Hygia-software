@@ -43,12 +43,18 @@ export interface PublicUser {
   criadoEm: Date;
 }
 
-/** Dados aceitos na criacao de um usuario (ja validados). */
+/**
+ * Dados aceitos no cadastro PUBLICO (ja validados).
+ *
+ * Nao existe campo de nivel de acesso aqui, e isso e proposital: quem se
+ * cadastra por uma rota publica nunca escolhe o proprio privilegio. Sem o
+ * campo no tipo, o TypeScript impede que alguem o reintroduza por engano.
+ * Papeis elevados so serao concedidos por convite de um administrador.
+ */
 export interface CreateUserInput {
   nome: string;
   email: string;
   senha: string;
-  nivelAcesso?: NivelAcesso;
 }
 
 /** Conteudo assinado dentro do JWT de sessao. */

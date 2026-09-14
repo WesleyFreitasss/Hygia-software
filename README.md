@@ -56,7 +56,7 @@ comodo em desenvolvimento. Em producao o caminho correto sao migrations
 
 | Metodo | Rota                    | Corpo                                    | Resposta                      |
 | ------ | ----------------------- | ---------------------------------------- | ----------------------------- |
-| POST   | `/auth/register`        | `nome`, `email`, `senha`, `nivelAcesso?` | `201` usuario + token JWT     |
+| POST   | `/auth/register`        | `nome`, `email`, `senha`                 | `201` vendedor + token JWT    |
 | POST   | `/auth/login`           | `email`, `senha`, `lembrarMe?`           | `200` usuario + token JWT     |
 | POST   | `/auth/forgot-password` | `email`                                  | `200` mensagem generica       |
 | POST   | `/auth/reset-password`  | `token`, `novaSenha`                     | `200` mensagem de confirmacao |
@@ -102,6 +102,10 @@ que a mensagem saiu.
 
 ### Decisoes de seguranca
 
+- O cadastro publico **nunca** define privilegio: informar `nivelAcesso` gera
+  400, e o servidor fixa o papel como `vendedor`. Corrigido apos uma escalada de
+  privilegio encontrada em auditoria - ver
+  [docs/seguranca](docs/seguranca/2026-09-14-escalada-de-privilegio-no-cadastro.md).
 - Senha guardada apenas como hash bcrypt (custo em `BCRYPT_SALT_ROUNDS`).
 - Login responde a mesma mensagem para e-mail inexistente e senha errada, e sempre
   executa uma comparacao bcrypt, para nao revelar quais e-mails estao cadastrados.
@@ -148,6 +152,8 @@ O componente aceita as props `logoSrc`, `onSucesso`, `onIrParaCadastro` e
 
 ### Pendencias conhecidas
 
+- Nenhuma rota cria administrador hoje (efeito intencional da correcao de
+  seguranca). O Administrador Master nasce junto com a corretora no Card 1.
 - Sem migrations: hoje o schema vem de `sequelize.sync({ alter: true })`. Antes
   de ir para producao, gere migrations com `sequelize-cli` e desligue `DB_SYNC`.
 - Rate limit em memoria: nao serve para varias instancias (ver secao acima).

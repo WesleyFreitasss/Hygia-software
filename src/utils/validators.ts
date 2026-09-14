@@ -1,5 +1,5 @@
 import { HttpError } from './httpError';
-import { isNivelAcesso, type CreateUserInput, type NivelAcesso } from '../types/user';
+import type { CreateUserInput } from '../types/user';
 
 /*
  * Validacao de e-mail.
@@ -87,17 +87,20 @@ export function validarCadastro(body: unknown): CreateUserInput {
   const email = validarEmail(dados.email, erros);
   const senha = validarSenha(dados.senha, erros);
 
-  let nivelAcesso: NivelAcesso | undefined;
+  /*
+   * Seguranca: o nivel de acesso NAO pode vir do cliente numa rota publica.
+   * Antes este campo era aceito e qualquer pessoa conseguia se cadastrar como
+   * administrador. Recusamos com 400 (em vez de ignorar em silencio) para que
+   * um cliente mal configurado descubra o erro na hora.
+   * Os demais campos desconhecidos continuam descartados, porque o objeto de
+   * retorno e montado campo a campo - nada do corpo e repassado inteiro.
+   */
   if (dados.nivelAcesso !== undefined) {
-    if (!isNivelAcesso(dados.nivelAcesso)) {
-      erros.nivelAcesso = 'Nivel de acesso deve ser "admin" ou "vendedor".';
-    } else {
-      nivelAcesso = dados.nivelAcesso;
-    }
+    erros.nivelAcesso = 'Este campo nao pode ser informado no cadastro.';
   }
 
   lancarSeHouverErros(erros);
-  return nivelAcesso ? { nome, email, senha, nivelAcesso } : { nome, email, senha };
+  return { nome, email, senha };
 }
 
 export interface LoginInput {
