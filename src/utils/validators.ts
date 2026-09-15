@@ -1,5 +1,5 @@
 import { HttpError } from './httpError';
-import { isNivelAcesso, type CreateUserInput, type NivelAcesso } from '../types/user';
+import type { CreateUserInput } from '../types/user';
 
 /*
  * Validacao de e-mail.
@@ -87,22 +87,27 @@ export function validarCadastro(body: unknown): CreateUserInput {
   const email = validarEmail(dados.email, erros);
   const senha = validarSenha(dados.senha, erros);
 
-  let nivelAcesso: NivelAcesso | undefined;
+  /*
+   * Seguranca: o nivel de acesso NAO pode vir do cliente numa rota publica.
+   * Antes este campo era aceito e qualquer pessoa conseguia se cadastrar como
+   * administrador. Recusamos com 400 (em vez de ignorar em silencio) para que
+   * um cliente mal configurado descubra o erro na hora.
+   * Os demais campos desconhecidos continuam descartados, porque o objeto de
+   * retorno e montado campo a campo - nada do corpo e repassado inteiro.
+   */
   if (dados.nivelAcesso !== undefined) {
-    if (!isNivelAcesso(dados.nivelAcesso)) {
-      erros.nivelAcesso = 'Nivel de acesso deve ser "admin" ou "vendedor".';
-    } else {
-      nivelAcesso = dados.nivelAcesso;
-    }
+    erros.nivelAcesso = 'Este campo nao pode ser informado no cadastro.';
   }
 
   lancarSeHouverErros(erros);
-  return nivelAcesso ? { nome, email, senha, nivelAcesso } : { nome, email, senha };
+  return { nome, email, senha };
 }
 
 export interface LoginInput {
   email: string;
   senha: string;
+  /** "Manter-me conectado": estende a validade do token. */
+  lembrarMe: boolean;
 }
 
 export function validarLogin(body: unknown): LoginInput {
@@ -118,8 +123,19 @@ export function validarLogin(body: unknown): LoginInput {
   const senha = typeof dados.senha === 'string' ? dados.senha : '';
   if (!senha) erros.senha = 'Senha e obrigatoria.';
 
+  // Campo opcional. Ausente vale como false; qualquer coisa que nao seja
+  // booleano e erro, para nao aceitar "false" (string) como verdadeiro.
+  let lembrarMe = false;
+  if (dados.lembrarMe !== undefined) {
+    if (typeof dados.lembrarMe !== 'boolean') {
+      erros.lembrarMe = 'Campo "lembrarMe" deve ser true ou false.';
+    } else {
+      lembrarMe = dados.lembrarMe;
+    }
+  }
+
   lancarSeHouverErros(erros);
-  return { email, senha };
+  return { email, senha, lembrarMe };
 }
 
 export function validarForgotPassword(body: unknown): { email: string } {

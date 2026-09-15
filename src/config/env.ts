@@ -71,6 +71,13 @@ export const env = {
   jwtSecret: lerJwtSecret(),
   /** Aceita os formatos do jsonwebtoken: "15m", "2h", "7d" ou segundos. */
   jwtExpiresIn: (process.env.JWT_EXPIRES_IN ?? '2h') as SignOptions['expiresIn'],
+  /**
+   * Validade quando o usuario marca "Manter-me conectado".
+   * A janela e longa de proposito, e so e aceitavel porque existe a revogacao
+   * por tokenVersion: trocar a senha derruba o token na hora, sem esperar
+   * os 30 dias.
+   */
+  jwtExpiresInLembrarMe: (process.env.JWT_EXPIRES_IN_LEMBRAR_ME ?? '30d') as SignOptions['expiresIn'],
   bcryptSaltRounds: lerInteiro('BCRYPT_SALT_ROUNDS', 10),
   resetTokenTtlMinutes: lerInteiro('RESET_TOKEN_TTL_MINUTES', 30),
 

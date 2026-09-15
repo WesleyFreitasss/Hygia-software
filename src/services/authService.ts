@@ -47,7 +47,9 @@ export class AuthService {
       nome: input.nome,
       email: input.email,
       senhaHash,
-      nivelAcesso: input.nivelAcesso ?? NIVEL_ACESSO_PADRAO,
+      // Fixado no servidor: o cadastro publico sempre cria vendedor.
+      // Segunda barreira, caso a validacao seja contornada no futuro.
+      nivelAcesso: NIVEL_ACESSO_PADRAO,
       tokenVersion: 0,
       resetTokenHash: null,
       resetTokenExpiraEm: null,
@@ -57,7 +59,7 @@ export class AuthService {
   }
 
   /** POST /auth/login */
-  async login({ email, senha }: LoginInput): Promise<AuthResult> {
+  async login({ email, senha, lembrarMe }: LoginInput): Promise<AuthResult> {
     const usuario = await this.repo.findByEmail(email);
 
     // Comparamos sempre - com o hash real ou com o falso - para que a resposta
@@ -68,7 +70,7 @@ export class AuthService {
       throw HttpError.unauthorized('E-mail ou senha incorretos.');
     }
 
-    return this.montarSessao(usuario);
+    return this.montarSessao(usuario, lembrarMe);
   }
 
   /**
@@ -153,7 +155,12 @@ export class AuthService {
     return toPublicUser(usuario);
   }
 
-  private montarSessao(usuario: User): AuthResult {
+  /**
+   * @param lembrarMe quando true, o token vale 30 dias em vez de 2 horas.
+   *   A validade vai assinada dentro do proprio token - o cliente nao consegue
+   *   esticar a sessao mexendo na requisicao.
+   */
+  private montarSessao(usuario: User, lembrarMe = false): AuthResult {
     const payload: TokenPayload = {
       sub: usuario.id,
       email: usuario.email,
@@ -162,7 +169,7 @@ export class AuthService {
     };
 
     const token = jwt.sign(payload, env.jwtSecret, {
-      expiresIn: env.jwtExpiresIn,
+      expiresIn: lembrarMe ? env.jwtExpiresInLembrarMe : env.jwtExpiresIn,
       algorithm: 'HS256',
     });
 
